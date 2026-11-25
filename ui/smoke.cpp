@@ -5,7 +5,7 @@ int main(int argc,char** argv){
  juce::ScopedJuceInitialiser_GUI init;
  if(argc!=2)return 2;
  juce::File output(juce::String::fromUTF8(argv[1]));if(output.createDirectory().failed())return 3;
- Rack rack;
+ Rack rack; rack.setVisible(true);
  int key=0,got=-1,value=-1; rack.onValue=[&](int k,int v){got=k;value=v;};
  auto group=[&](const char* title,std::initializer_list<const char*> names){Section s{title,{}};for(auto n:names)s.controls.push_back({n,0,128,64,key++,false});return s;};
  for(int mode=0;mode<3;++mode){

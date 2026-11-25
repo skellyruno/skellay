@@ -21,7 +21,7 @@ public:
  void drawRotarySlider(juce::Graphics& g,int x,int y,int w,int h,float pos,float start,float end,juce::Slider&) override {
   const auto r=juce::Rectangle<float>(float(x),float(y),float(w),float(h)).reduced(8);
   const float radius=std::min(r.getWidth(),r.getHeight())*.5f;
-  if(radius<4)return;
+  if(radius<16)return;
   const auto c=r.getCentre();const float a=start+juce::jlimit(0.f,1.f,pos)*(end-start);
   auto circle=[&](float rr){return juce::Rectangle<float>(c.x-rr,c.y-rr,rr*2,rr*2);};
   auto arc=[&](float from,float to,juce::Colour col,float thick){if(to<=from)return;juce::Path p;p.addCentredArc(c.x,c.y,radius,radius,0,from,to,true);g.setColour(col);g.strokePath(p,juce::PathStrokeType(thick,juce::PathStrokeType::curved,juce::PathStrokeType::rounded));};
@@ -94,7 +94,7 @@ class Rack final:public juce::Component {
  }
  void meter(juce::Graphics& g,juce::Rectangle<int> r,juce::String text,float v){
   g.setColour(muted);g.setFont(juce::Font(juce::FontOptions(11.f)));g.drawText(text,r.removeFromLeft(31),juce::Justification::centredLeft);
-  auto db=juce::Decibels::gainToDecibels(std::max(0.f,v),-60.f);auto n=juce::jlimit(0.f,1.f,(db+60.f)/60.f);
+  auto db=(v>0.f&&std::isfinite(v)?std::max(-60.f,20.f*std::log10(v)):-60.f);auto n=juce::jlimit(0.f,1.f,(db+60.f)/60.f);
   auto value=r.removeFromRight(45);g.drawText(db<=-60?"-inf":juce::String(db,1),value,juce::Justification::centredRight);
   auto bar=r.reduced(4,5);g.setColour(ink);g.fillRoundedRectangle(bar.toFloat(),2);
   const int count=24,step=std::max(1,bar.getWidth()/count);for(int i=0;i<count;++i){g.setColour(float(i+1)/count<=n?(v>=1.f&&i>=22?juce::Colour(0xffe6a069):green):border);g.fillRect(bar.getX()+i*step,bar.getY(),std::max(1,step-2),bar.getHeight());}
@@ -123,7 +123,7 @@ public:
    group->addAndMakeVisible(*cell);group->cells.push_back(std::move(cell));}content.addAndMakeVisible(*group);groups.push_back(std::move(group));}
   layoutGroups();if(resetScroll)viewport.setViewPosition(0,0);repaint();
  }
- void updateValue(int key,int value){for(auto& g:groups)for(auto& c:g->cells)if(c->spec.key==key&&!c->slider.isMouseButtonDown()&&!c->slider.isKeyboardFocusWithin(true))c->slider.setValue(value,juce::dontSendNotification);}
+ void updateValue(int key,int value){for(auto& g:groups)for(auto& c:g->cells)if(c->spec.key==key&&!c->slider.isMouseButtonDown()&&!c->slider.hasKeyboardFocus(true))c->slider.setValue(value,juce::dontSendNotification);}
  void setStatus(juce::String s){status.setText(s,juce::dontSendNotification);}
  void setPreset(juce::String s){preset=std::move(s);repaint(0,0,getWidth(),74);}
  void setMeter(float a,float b,bool e){in=a;out=b;error=e;repaint(0,0,getWidth(),74);}
@@ -133,8 +133,7 @@ public:
  juce::Component* importTarget(){return &importButton;}
  void paint(juce::Graphics& g)override{
   g.fillAll(ink);g.setColour(juce::Colour(0xff171d19));g.fillRect(0,0,getWidth(),74);
-  g.setColour(pale);g.setFont(juce::Font(juce::FontOptions(31.f).withStyle("Bold")));g.drawText("SKELL",19,6,100,38,juce::Justification::centredLeft);
-  g.setColour(green);g.drawText("AY",117,6,62,38,juce::Justification::centredLeft);
+  g.setColour(pale);g.setFont(juce::Font(juce::FontOptions(31.f).withStyle("Bold")));g.drawText("SKELLAY",19,6,175,38,juce::Justification::centredLeft);g.setColour(green);g.fillRoundedRectangle(20,64,36,2,1);
   g.setColour(muted);g.setFont(juce::Font(juce::FontOptions(11.f)));g.drawText("MULTI-ENGINE DELAY  /  0.8",21,44,240,18,juce::Justification::centredLeft);
   const int mx=getWidth()-244;meter(g,{mx,13,222,21},"IN",in);meter(g,{mx,36,222,21},"OUT",out);
   g.setColour(error?juce::Colour(0xffe6a069):muted);g.setFont(juce::Font(juce::FontOptions(13.f)));g.drawFittedText(error?"ENGINE ERROR":preset,260,16,std::max(0,mx-276),38,juce::Justification::centredLeft,2);
