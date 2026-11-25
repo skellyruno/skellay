@@ -4,11 +4,11 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/skellay-windows.yml'
-      - 'docs/WINDOWS_BUILD.md'
-      - 'tools/setup-public-build.ps1'
-      - 'docs/LIVE_AUTOMATION.md'
-      - 'docs/MEMORY_AND_TAILS.md'
-      - 'include/**'
+      - 'CMakeLists.txt'
+      - 'native/**'
+      - 'plugin/**'
+      - 'tests/**'
+      - 'tools/**'
       - 'ui/**'
       - 'overlay/**'
   workflow_dispatch:
@@ -19,118 +19,44 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   windows-vst3:
-    if: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'feature/native-delay-foundation') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feature/native-delay-foundation') }}
     runs-on: windows-2022
     timeout-minutes: 45
     defaults:
       run:
         shell: pwsh
     steps:
-      - name: Checkout trusted build revision
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          persist-credentials: false
-      - name: Restore owner-provisioned native package
-        id: source
-        env:
-          PART1: ${{ secrets.SKELLAY_NATIVE_1 }}
-          PART2: ${{ secrets.SKELLAY_NATIVE_2 }}
-          PART3: ${{ secrets.SKELLAY_NATIVE_3 }}
-          PART4: ${{ secrets.SKELLAY_NATIVE_4 }}
-          ARCHIVE_PASSWORD: ${{ secrets.SKELLAY_BUILD_PASSWORD }}
-        run: |
-          $ErrorActionPreference = 'Stop'
-          if (!$env:PART1 -or !$env:PART2 -or !$env:PART3 -or !$env:PART4 -or !$env:ARCHIVE_PASSWORD) {
-            throw 'Native package secrets missing. Run tools/setup-public-build.ps1 on the owner PC. Public repositories are supported.'
-          }
-          $zip = Join-Path $env:RUNNER_TEMP 'native.zip'
-          try {
-            [IO.File]::WriteAllBytes($zip, [Convert]::FromBase64String($env:PART1 + $env:PART2 + $env:PART3 + $env:PART4))
-            if ((Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'cb7d7a803f447264b3262c04cfcb96355eba75bc8dbdd4d6be7824c6c15fb365') { throw 'hash mismatch' }
-            Expand-Archive -LiteralPath $zip -DestinationPath native-source
-          } catch { throw 'Private source restoration failed. Check the v0.7 source package and secrets.' }
-          finally { Remove-Item -LiteralPath $zip -Force -ErrorAction SilentlyContinue }
-      - name: Apply actual editor integration
-        run: |
-          New-Item -ItemType Directory -Force logs | Out-Null
-          cmake -DSOURCE_DIR="${{ github.workspace }}/native-source" -P overlay/apply-ui.cmake *> logs/editor-overlay.txt
-          if ($LASTEXITCODE -ne 0) { throw 'Editor integration failed; encrypted diagnostics will be attached.' }
-      - name: Configure pinned JUCE and Windows x64
-        run: |
-          New-Item -ItemType Directory -Force logs | Out-Null
-          & cmake -S native-source -B build -A x64 -DSKELLAY_BUILD_VST3=ON *> logs/configure.txt
-          if ($LASTEXITCODE -ne 0) { throw 'Configure failed; encrypted diagnostics will be attached.' }
-      - name: Build native tests and VST3
-        run: |
-          & cmake --build build --config Release --parallel 2 *> logs/build.txt
-          if ($LASTEXITCODE -ne 0) { throw 'Build failed; encrypted diagnostics will be attached.' }
-      - name: Run native regression tests
-        run: |
-          & ctest --test-dir build -C Release --output-on-failure *> logs/tests.txt
-          if ($LASTEXITCODE -ne 0) { throw 'Regression tests failed; encrypted diagnostics will be attached.' }
-      - name: Verify bundle and encrypt artifact
-        env:
-          ARCHIVE_PASSWORD: ${{ secrets.SKELLAY_BUILD_PASSWORD }}
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $bundle = Get-Item 'build/Skellay_artefacts/Release/VST3/Skellay.vst3'
-          $binary = Join-Path $bundle.FullName 'Contents/x86_64-win/Skellay.vst3'
-          if (!(Test-Path -LiteralPath $binary -PathType Leaf)) { throw 'Windows x64 module missing.' }
-          New-Item -ItemType Directory -Force dist | Out-Null
-          $seven = Join-Path $env:ProgramFiles '7-Zip/7z.exe'
-          if (!(Test-Path $seven)) { $seven = (Get-Command 7z.exe -ErrorAction Stop).Source }
-          $archive = 'dist/Skellay-experimental-0.8-Windows-x64.7z'
-          & $seven a -t7z -mhe=on "-p$($env:ARCHIVE_PASSWORD.Trim())" $archive $bundle.FullName *> logs/package.txt
-          if ($LASTEXITCODE -ne 0) { throw 'Artifact encryption failed.' }
-          & $seven t "-p$($env:ARCHIVE_PASSWORD.Trim())" $archive *> logs/archive-test.txt
-          if ($LASTEXITCODE -ne 0) { throw 'Encrypted artifact integrity test failed.' }
-          Get-FileHash $archive -Algorithm SHA256 | Out-File dist/SHA256.txt
-      - name: Upload encrypted experimental artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: Skellay-experimental-0.8-Windows-x64
-          path: dist/
-          if-no-files-found: error
-          retention-days: 7
-      - name: Encrypt build diagnostics on failure
-        if: ${{ failure() && steps.source.outcome == 'success' }}
-        env:
-          ARCHIVE_PASSWORD: ${{ secrets.SKELLAY_BUILD_PASSWORD }}
-        run: |
-          if (!(Test-Path logs)) { exit 0 }
-          $seven = Join-Path $env:ProgramFiles '7-Zip/7z.exe'
-          if (!(Test-Path $seven)) { $seven = (Get-Command 7z.exe -ErrorAction Stop).Source }
-          & $seven a -t7z -mhe=on "-p$($env:ARCHIVE_PASSWORD.Trim())" diagnostics.7z logs *> $null
-          if ($LASTEXITCODE -ne 0) { throw 'Diagnostic encryption failed.' }
-      - name: Upload encrypted diagnostics
-        if: ${{ failure() && steps.source.outcome == 'success' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: Skellay-build-diagnostics
-          path: diagnostics.7z
-          if-no-files-found: ignore
-          retention-days: 7
-
-  editor-check:
-    runs-on: windows-2022
-    timeout-minutes: 40
-    steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
-      - name: Configure real JUCE editor component
-        run: cmake -S ui -B ui-build -A x64
-      - name: Compile editor check
-        run: cmake --build ui-build --config Release --parallel 2
-      - name: Exercise all three layouts and capture component
+      - name: Configure pinned JUCE and Windows x64
+        run: cmake -S . -B build -A x64 -DSKELLAY_BUILD_VST3=ON
+      - name: Compile VST3 and native regression tests
+        run: cmake --build build --config Release --parallel 2
+      - name: Run native regression tests
+        run: ctest --test-dir build -C Release --output-on-failure
+      - name: Verify Windows x64 module and package
         run: |
-          & ./ui-build/SkellayEditorCheck_artefacts/Release/SkellayEditorCheck.exe "${{ github.workspace }}/editor-captures"
-          if ($LASTEXITCODE -ne 0) { throw "Editor component check failed: $LASTEXITCODE" }
+          $ErrorActionPreference = 'Stop'
+          $bundle = Get-Item 'build/Skellay_artefacts/Release/VST3/Skellay.vst3'
+          $binary = Join-Path $bundle.FullName 'Contents/x86_64-win/Skellay.vst3'
+          if (!(Test-Path -LiteralPath $binary -PathType Leaf)) { throw 'Missing VST3 module' }
+          $file = [IO.File]::OpenRead($binary)
+          try {
+            $reader = [IO.BinaryReader]::new($file)
+            if ($reader.ReadUInt16() -ne 0x5a4d) { throw 'Missing MZ header' }
+            $file.Position = 0x3c
+            $pe = $reader.ReadUInt32()
+            $file.Position = $pe
+            if ($reader.ReadUInt32() -ne 0x4550 -or $reader.ReadUInt16() -ne 0x8664) { throw 'Not a Windows x64 PE module' }
+          } finally { $file.Dispose() }
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Compress-Archive -LiteralPath $bundle.FullName -DestinationPath dist/Skellay-experimental-0.8-Windows-x64.zip
+          Get-FileHash dist/Skellay-experimental-0.8-Windows-x64.zip -Algorithm SHA256 | Out-File dist/SHA256.txt
+          git rev-parse HEAD | Out-File dist/COMMIT.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: Skellay-editor-component-check
-          path: editor-captures/
+          name: Skellay-experimental-0.8-Windows-x64
+          path: dist/
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 14

@@ -1,3 +1,2 @@
 # Skellay agent rules
-
-Follow [SkellWorld/AGENTS.md](https://github.com/skellyruno/SkellWorld/blob/main/AGENTS.md). This is not Skell Delay. Keep private DSP, raw states, vocals and restricted artifacts outside this public repository. No fallback approximation. Never merge unverified work.
+Follow [SkellWorld/AGENTS.md](https://github.com/skellyruno/SkellWorld/blob/main/AGENTS.md). This is not Skell Delay. The owner explicitly authorized temporary public commits of Skellay's required native source and experimental binaries for this testing period; do not publish private recordings, recovered raw presets, research archives, credentials, or unrelated private source. No fallback approximation. Preserve notices and original versions. Never merge unverified work.

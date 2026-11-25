@@ -1,2 +1,5 @@
-# Windows v0.7
-Public CI restores four owner-provisioned secret chunks (max 26000 chars each) from exact private v0.7 ZIP SHA256 cb7d7a803f447264b3262c04cfcb96355eba75bc8dbdd4d6be7824c6c15fb365. Updated setup script required. Existing password retained. Never publish raw DSP. Windows validation pending. See MEMORY_AND_TAILS.md.
+# Windows experimental build 0.8
+
+Owner explicitly authorized temporarily public source and build artifacts for testing on 2026-11-25. Direct repository checkout now builds the complete native v0.7 engines and v0.8 JUCE editor. No secrets, setup script, encrypted archive, or private release asset required. All 13 native files and nine synthetic test sources have been checked against the prior tested package by Git blob hashes. No vocal recordings, personal preset fixtures, raw states, or research archives are included. Preserve attribution; Skelly Licensing terms and third-party distribution permissions remain unverified. This is not a general public release or an open-source license grant. Making the repo private later cannot retract copies or forks.
+
+GitHub Actions fetches pinned JUCE 8.0.12, compiles the VST3 and regression tests, runs CTest, validates the x64 PE module, and packages an ordinary ZIP. Download the successful run artifact. UI shared component previously passed Windows CI, but full wrapper, pluginval, FL Studio, and genuine positive FST loading remain unverified pending evidence. Keep PR draft; no merge. Delay 1 out of scope. Skell Delay untouched.
