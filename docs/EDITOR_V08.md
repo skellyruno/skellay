@@ -1,0 +1,5 @@
+# v0.8 — native JUCE editor redesign
+
+The new Rack component is shared by the actual VST3 editor and a standalone Windows JUCE component-check target. No substitute DSP or mockup plugin is provided. Hardware-style rotary controls, segmented mode and bank navigation, categorized sections, real processor input/output meters (dB scale), import/export and exact integer entry. Classic 8 and Modern 26 controls; Bank global, selected bank and structural options. Old raw parameter bindings, private v0.7 DSP and project-state layout are retained. No fake echo visualization; that requires DSP telemetry.
+
+CI builds the actual shared UI component without secrets; the VST3 job continues to require the existing v0.7 source secrets and applies the new editor overlay after verifying the source ZIP. Component check uses synthetic control values, not real presets or audio; screenshots are NOT full VST3 host screenshots. Windows compilation and host testing are pending until results are confirmed. The existing setup package remains valid. Delay 1 is out of scope. Skell Delay unchanged.
