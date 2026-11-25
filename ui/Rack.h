@@ -70,7 +70,7 @@ public:
   g.setColour(pale);g.setFont(juce::Font(juce::FontOptions(12.f).withStyle("Bold")));g.drawText(name,18,3,getWidth()-24,24,juce::Justification::centredLeft);
  }
  void resized()override{
-  auto r=getLocalBounds().reduced(8);r.removeFromTop(30);
+  auto r=getLocalBounds().reduced(5);r.removeFromTop(24);
   int cols=std::max(1,getWidth()/66);cols=std::min(cols,std::max(1,int(cells.size())));
   int width=r.getWidth()/cols;
   for(size_t i=0;i<cells.size();++i)cells[i]->setBounds(r.getX()+int(i%size_t(cols))*width,r.getY()+int(i/size_t(cols))*91,width,91);
