@@ -1,3 +1,2 @@
-# Windows experimental build 0.6
-
-Public repositories are supported. Private DSP is restored from four Actions secrets, SHA256 verified, and built directly (v0.4/v0.5 overlays are already incorporated). The exact owner-controlled ZIP is SKELLAY_PRIVATE_NATIVE_FOUNDATION_0.6.zip, SHA256 fc89c48100701a804b044065b4dddca5343cbcf7fa08c2d19fbdbab6907708a4. The updated tools/setup-public-build.ps1 uses GitHub CLI to set the four secret chunks and preserves the existing local archive password. Run from the owner PC with the new ZIP, then rerun only the latest v0.6 PR run. Do not use the v0.3 package or publish private sources as release assets. Windows CI runs native regression tests and encrypts VST3/diagnostics. No build, pluginval or host validation claimed until the workflow passes. See LIVE_AUTOMATION.md for evidence and limitations.
+# Windows v0.7
+Public CI restores four owner-provisioned secret chunks (max 26000 chars each) from exact private v0.7 ZIP SHA256 cb7d7a803f447264b3262c04cfcb96355eba75bc8dbdd4d6be7824c6c15fb365. Updated setup script required. Existing password retained. Never publish raw DSP. Windows validation pending. See MEMORY_AND_TAILS.md.

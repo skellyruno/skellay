@@ -1,6 +1,6 @@
 # Run on the owner Windows PC. Requires GitHub CLI and repository admin access.
 param(
-  [string]$SourceZip = (Join-Path $PSScriptRoot 'SKELLAY_PRIVATE_NATIVE_FOUNDATION_0.6.zip'),
+  [string]$SourceZip = (Join-Path $PSScriptRoot 'SKELLAY_PRIVATE_NATIVE_FOUNDATION_0.7.zip'),
   [string]$PasswordFile = (Join-Path $env:LOCALAPPDATA 'Skellay/build-password.txt'),
   [string]$RunId = ''
 )
@@ -9,10 +9,10 @@ $repo = 'skellyruno/skellay'
 if (!(Get-Command gh -ErrorAction SilentlyContinue)) { throw 'Install GitHub CLI first: winget install --id GitHub.cli' }
 & gh auth status
 if ($LASTEXITCODE -ne 0) { throw 'Run gh auth login first.' }
-if (!(Test-Path -LiteralPath $SourceZip -PathType Leaf)) { throw 'Place the private v0.6 source ZIP next to this script.' }
-if ((Get-FileHash -LiteralPath $SourceZip -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'fc89c48100701a804b044065b4dddca5343cbcf7fa08c2d19fbdbab6907708a4') { throw 'Wrong source ZIP or checksum mismatch.' }
+if (!(Test-Path -LiteralPath $SourceZip -PathType Leaf)) { throw 'Place the private v0.7 source ZIP next to this script.' }
+if ((Get-FileHash -LiteralPath $SourceZip -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'cb7d7a803f447264b3262c04cfcb96355eba75bc8dbdd4d6be7824c6c15fb365') { throw 'Wrong source ZIP or checksum mismatch.' }
 $payload = [Convert]::ToBase64String([IO.File]::ReadAllBytes((Resolve-Path -LiteralPath $SourceZip).Path))
-$chunk = 24000
+$chunk = 26000
 if ($payload.Length -le 3*$chunk -or $payload.Length -gt 4*$chunk) { throw 'Unexpected package length.' }
 if (!(Test-Path -LiteralPath $PasswordFile)) {
   New-Item -ItemType Directory -Force (Split-Path -Parent $PasswordFile) | Out-Null
