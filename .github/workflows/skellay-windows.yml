@@ -47,7 +47,11 @@ jobs:
           } catch { throw 'Private source restoration failed. Check the v0.3 source package and secrets.' }
           finally { Remove-Item -LiteralPath $zip -Force -ErrorAction SilentlyContinue }
       - name: Apply tested integration overlay
-        run: cmake -DSOURCE_DIR="${{ github.workspace }}/native-source" -P overlay/apply.cmake
+        run: |
+          cmake -DSOURCE_DIR="${{ github.workspace }}/native-source" -P overlay/apply.cmake
+          if ($LASTEXITCODE -ne 0) { throw 'State overlay failed.' }
+          cmake -DSOURCE_DIR="${{ github.workspace }}/native-source" -P overlay/apply-tempo.cmake
+          if ($LASTEXITCODE -ne 0) { throw 'Tempo overlay failed.' }
       - name: Configure pinned JUCE and Windows x64
         run: |
           New-Item -ItemType Directory -Force logs | Out-Null
@@ -72,7 +76,7 @@ jobs:
           New-Item -ItemType Directory -Force dist | Out-Null
           $seven = Join-Path $env:ProgramFiles '7-Zip/7z.exe'
           if (!(Test-Path $seven)) { $seven = (Get-Command 7z.exe -ErrorAction Stop).Source }
-          $archive = 'dist/Skellay-experimental-0.4-Windows-x64.7z'
+          $archive = 'dist/Skellay-experimental-0.5-Windows-x64.7z'
           & $seven a -t7z -mhe=on "-p$($env:ARCHIVE_PASSWORD.Trim())" $archive $bundle.FullName *> logs/package.txt
           if ($LASTEXITCODE -ne 0) { throw 'Artifact encryption failed.' }
           & $seven t "-p$($env:ARCHIVE_PASSWORD.Trim())" $archive *> logs/archive-test.txt
@@ -81,7 +85,7 @@ jobs:
       - name: Upload encrypted experimental artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Skellay-experimental-0.4-Windows-x64
+          name: Skellay-experimental-0.5-Windows-x64
           path: dist/
           if-no-files-found: error
           retention-days: 7

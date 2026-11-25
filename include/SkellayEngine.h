@@ -10,6 +10,8 @@ struct Configuration { Model model; std::vector<std::uint8_t> bytes; };
 class Engine {
 public:
  virtual ~Engine()=default;
+ // Audio-thread-only; engines requiring preparation ignore this.
+ virtual void updateTempo(double) noexcept {}
  virtual bool process(float* left,float* right,int samples) noexcept=0;
 };
 Configuration defaults(Model);

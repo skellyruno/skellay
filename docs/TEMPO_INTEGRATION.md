@@ -1,0 +1,9 @@
+# v0.5 native tempo integration — 2026-11-25
+
+Fix: previously all tempo changes recreated the active engine and discarded its old tail after the engine-exchange fade. Modern now receives the native in-place tempo update on the audio thread when synced, including while crossfading. Free-running Modern ignores tempo. Worker skips tempo-driven Bank rebuilds when no enabled bank is synced. Classic and synced Bank still rebuild; ordinary preset and control changes still use engine swaps. No full automation or pitch-continuity certification.
+
+Verification: original private v0.3 source with v0.4 and v0.5 overlays applied locally. GCC Release 6/6 CTest passed (1.98 s), ASan/UBSan/float-cast-overflow 6/6 (23.69 s). 20 Modern impulse-render cases: 32/44.1/48/96/192 kHz, sync on/off, Keep Pitch on/off; 128-sample blocks, tempo 120 to 90 BPM at the first block after 0.25 s, 2 s render. All finite, ten free-running cases exactly sample-identical to unchanged-tempo baseline, ten synced cases retained nonzero tail and differed from unchanged-tempo baseline. Zero ordinary C++ new/new[] calls during the tested render loop; does not certify all allocation mechanisms or other controls. Bank rebuild policy unit checks only, not real-time Bank tempo changes. No vocal listening or host validation.
+
+CI: prior run 45583846852 job 139100296067 failed with "Native package secrets missing" before configure. v0.5 overlay keeps original source hash and secrets. No need to upload a new source ZIP. Public runner support remains, private content not committed. Local JUCE 8.0.12 fetch still blocked by DNS. No Windows VST3 or screenshots. Do not merge or release.
+
+Next: provision existing secrets, compile Windows, native host smoke/recall, then improve Classic and Bank tempo/tail transitions. Skell Delay untouched.
