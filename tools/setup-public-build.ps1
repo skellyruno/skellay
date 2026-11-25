@@ -1,6 +1,6 @@
 # Run on the owner Windows PC. Requires GitHub CLI and repository admin access.
 param(
-  [string]$SourceZip = (Join-Path $PSScriptRoot 'SKELLAY_PRIVATE_NATIVE_FOUNDATION_0.3.zip'),
+  [string]$SourceZip = (Join-Path $PSScriptRoot 'SKELLAY_PRIVATE_NATIVE_FOUNDATION_0.6.zip'),
   [string]$PasswordFile = (Join-Path $env:LOCALAPPDATA 'Skellay/build-password.txt'),
   [string]$RunId = ''
 )
@@ -9,11 +9,11 @@ $repo = 'skellyruno/skellay'
 if (!(Get-Command gh -ErrorAction SilentlyContinue)) { throw 'Install GitHub CLI first: winget install --id GitHub.cli' }
 & gh auth status
 if ($LASTEXITCODE -ne 0) { throw 'Run gh auth login first.' }
-if (!(Test-Path -LiteralPath $SourceZip -PathType Leaf)) { throw 'Place the private v0.3 source ZIP next to this script.' }
-if ((Get-FileHash -LiteralPath $SourceZip -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'a371652f647a57eac6387e96fa263eb92d46dbc4f8792b3524dbe47169cea873') { throw 'Wrong source ZIP or checksum mismatch.' }
+if (!(Test-Path -LiteralPath $SourceZip -PathType Leaf)) { throw 'Place the private v0.6 source ZIP next to this script.' }
+if ((Get-FileHash -LiteralPath $SourceZip -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'fc89c48100701a804b044065b4dddca5343cbcf7fa08c2d19fbdbab6907708a4') { throw 'Wrong source ZIP or checksum mismatch.' }
 $payload = [Convert]::ToBase64String([IO.File]::ReadAllBytes((Resolve-Path -LiteralPath $SourceZip).Path))
-$chunk = 22000
-if ($payload.Length -le 2*$chunk -or $payload.Length -gt 3*$chunk) { throw 'Unexpected package length.' }
+$chunk = 24000
+if ($payload.Length -le 3*$chunk -or $payload.Length -gt 4*$chunk) { throw 'Unexpected package length.' }
 if (!(Test-Path -LiteralPath $PasswordFile)) {
   New-Item -ItemType Directory -Force (Split-Path -Parent $PasswordFile) | Out-Null
   $random = [byte[]]::new(32)
@@ -27,7 +27,7 @@ function Set-PrivateSecret([string]$Name,[string]$Value) {
   $Value | & gh secret set $Name --repo $repo --app actions
   if ($LASTEXITCODE -ne 0) { throw "Failed to provision $Name." }
 }
-for ($i=0; $i -lt 3; $i++) {
+for ($i=0; $i -lt 4; $i++) {
   $start = $i*$chunk
   Set-PrivateSecret "SKELLAY_NATIVE_$($i+1)" ($payload.Substring($start, [Math]::Min($chunk,$payload.Length-$start)))
 }

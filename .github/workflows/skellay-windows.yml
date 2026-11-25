@@ -6,7 +6,8 @@ on:
       - '.github/workflows/skellay-windows.yml'
       - 'docs/WINDOWS_BUILD.md'
       - 'tools/setup-public-build.ps1'
-      - 'overlay/**'
+      - 'docs/LIVE_AUTOMATION.md'
+      - 'include/**'
   workflow_dispatch:
 permissions:
   contents: read
@@ -22,7 +23,7 @@ jobs:
       run:
         shell: pwsh
     steps:
-      - name: Checkout trusted integration overlay
+      - name: Checkout trusted build revision
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -33,25 +34,20 @@ jobs:
           PART1: ${{ secrets.SKELLAY_NATIVE_1 }}
           PART2: ${{ secrets.SKELLAY_NATIVE_2 }}
           PART3: ${{ secrets.SKELLAY_NATIVE_3 }}
+          PART4: ${{ secrets.SKELLAY_NATIVE_4 }}
           ARCHIVE_PASSWORD: ${{ secrets.SKELLAY_BUILD_PASSWORD }}
         run: |
           $ErrorActionPreference = 'Stop'
-          if (!$env:PART1 -or !$env:PART2 -or !$env:PART3 -or !$env:ARCHIVE_PASSWORD) {
+          if (!$env:PART1 -or !$env:PART2 -or !$env:PART3 -or !$env:PART4 -or !$env:ARCHIVE_PASSWORD) {
             throw 'Native package secrets missing. Run tools/setup-public-build.ps1 on the owner PC. Public repositories are supported.'
           }
           $zip = Join-Path $env:RUNNER_TEMP 'native.zip'
           try {
-            [IO.File]::WriteAllBytes($zip, [Convert]::FromBase64String($env:PART1 + $env:PART2 + $env:PART3))
-            if ((Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'a371652f647a57eac6387e96fa263eb92d46dbc4f8792b3524dbe47169cea873') { throw 'hash mismatch' }
+            [IO.File]::WriteAllBytes($zip, [Convert]::FromBase64String($env:PART1 + $env:PART2 + $env:PART3 + $env:PART4))
+            if ((Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'fc89c48100701a804b044065b4dddca5343cbcf7fa08c2d19fbdbab6907708a4') { throw 'hash mismatch' }
             Expand-Archive -LiteralPath $zip -DestinationPath native-source
-          } catch { throw 'Private source restoration failed. Check the v0.3 source package and secrets.' }
+          } catch { throw 'Private source restoration failed. Check the v0.6 source package and secrets.' }
           finally { Remove-Item -LiteralPath $zip -Force -ErrorAction SilentlyContinue }
-      - name: Apply tested integration overlay
-        run: |
-          cmake -DSOURCE_DIR="${{ github.workspace }}/native-source" -P overlay/apply.cmake
-          if ($LASTEXITCODE -ne 0) { throw 'State overlay failed.' }
-          cmake -DSOURCE_DIR="${{ github.workspace }}/native-source" -P overlay/apply-tempo.cmake
-          if ($LASTEXITCODE -ne 0) { throw 'Tempo overlay failed.' }
       - name: Configure pinned JUCE and Windows x64
         run: |
           New-Item -ItemType Directory -Force logs | Out-Null
@@ -76,7 +72,7 @@ jobs:
           New-Item -ItemType Directory -Force dist | Out-Null
           $seven = Join-Path $env:ProgramFiles '7-Zip/7z.exe'
           if (!(Test-Path $seven)) { $seven = (Get-Command 7z.exe -ErrorAction Stop).Source }
-          $archive = 'dist/Skellay-experimental-0.5-Windows-x64.7z'
+          $archive = 'dist/Skellay-experimental-0.6-Windows-x64.7z'
           & $seven a -t7z -mhe=on "-p$($env:ARCHIVE_PASSWORD.Trim())" $archive $bundle.FullName *> logs/package.txt
           if ($LASTEXITCODE -ne 0) { throw 'Artifact encryption failed.' }
           & $seven t "-p$($env:ARCHIVE_PASSWORD.Trim())" $archive *> logs/archive-test.txt
@@ -85,7 +81,7 @@ jobs:
       - name: Upload encrypted experimental artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Skellay-experimental-0.5-Windows-x64
+          name: Skellay-experimental-0.6-Windows-x64
           path: dist/
           if-no-files-found: error
           retention-days: 7
