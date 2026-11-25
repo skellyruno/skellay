@@ -1,12 +1,9 @@
-# Windows experimental build 0.3
+# Public-repository Windows build 0.3
 
-The owner-controlled native package now includes a JUCE VST3 target pinned to 8.0.12, a basic native editor, three separate engine states, raw preset controls, a multi-instance FL preset selector and raw export. Engine preparation and disposal are moved to a control worker with a 20 ms crossfade when swapping prepared engines. This resets old tails after the crossfade; live parameter automation, pitch-continuous tempo changes, Bank oversampling latency compensation, host recall and FL Studio are not verified. No screenshots requested for this test build.
+Public GitHub Actions is allowed. Do not attach private native source as a public release or commit. The workflow reconstructs the exact v0.3 source ZIP from three owner-provisioned Actions secrets (22,000 / 22,000 / 21,056 base64 characters), checks SHA256, and builds pinned JUCE 8.0.12 on Windows x64. It runs all native tests before packaging. Same-repository feature branch only; fork PRs excluded. Public logs contain status only; private compiler/test diagnostics and VST3 artifacts are 7-Zip AES-encrypted with encrypted headers. No signing, pluginval or FL Studio validation yet.
 
-Local Linux native regression suites: 4/4 release and 4/4 ASan/UBSan/float-cast-overflow. New isolated exchange test covers crossfade, concurrent producer/consumer (10,000 iterations each), reclamation. This does not certify the native kernels' full callback safety. Local JUCE configure failed on DNS. No plugin compilation claimed.
+One-time owner setup: download the private source ZIP (not a public asset), save tools/setup-public-build.ps1 beside it, install GitHub CLI and authenticate with gh auth login. Run the script in PowerShell. It checks the package hash, stores three chunks and an archive password as Actions secrets, and saves the password only in LOCALAPPDATA/Skellay/build-password.txt. Keep that file safe; use it to open the downloaded .7z in 7-Zip. Never post the password or source secrets publicly. Rerun the latest PR workflow after setup. Optionally pass -RunId with the failed run ID to the setup script.
 
-GitHub Actions is configured for Windows 2022 x64, native regression tests and VST3 packaging. Privacy gate blocks public repositories before fetching private data. After confirming the repository is private, attach the exact private ZIP to a private GitHub release with tag `skellay-native-0.3` and rerun the PR workflow. Never attach it to a public release.
+Expected SHA256: a371652f647a57eac6387e96fa263eb92d46dbc4f8792b3524dbe47169cea873.
 
-Package: `SKELLAY_PRIVATE_NATIVE_FOUNDATION_0.3.zip`
-SHA256: `a371652f647a57eac6387e96fa263eb92d46dbc4f8792b3524dbe47169cea873`
-
-No public DSP or binary distribution authorized. No pluginval or host test performed. Skell Delay untouched.
+Local native release and sanitizer suites previously passed 4/4; JUCE wrapper remains uncompiled pending source provisioning and CI. Engine exchange crossfades for 20 ms and resets old tails, not full tail preservation. Screenshots deferred at owner request. Skell Delay untouched.

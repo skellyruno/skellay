@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/skellay-windows.yml'
       - 'docs/WINDOWS_BUILD.md'
+      - 'tools/setup-public-build.ps1'
   workflow_dispatch:
 permissions:
   contents: read
@@ -12,57 +13,85 @@ concurrency:
   group: ${{ github.event_name == 'pull_request' && format('skellay-pr-{0}', github.event.pull_request.number) || format('skellay-protected-{0}', github.run_id) }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
-  privacy-gate:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Confirm private repository
-        env:
-          IS_PRIVATE: ${{ github.event.repository.private }}
-        run: |
-          if [ "$IS_PRIVATE" != "true" ]; then
-            echo "::error::Private native DSP and experimental binaries must not be exposed. Change repository visibility to private before attaching the owner-controlled source ZIP."
-            exit 1
-          fi
   windows-vst3:
-    needs: privacy-gate
-    if: ${{ github.event.repository.private && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    if: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'feature/native-delay-foundation') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feature/native-delay-foundation') }}
     runs-on: windows-2022
     timeout-minutes: 45
     defaults:
       run:
         shell: pwsh
     steps:
-      - name: Retrieve exact private native source package
+      - name: Restore owner-provisioned native package
+        id: source
         env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
+          PART1: ${{ secrets.SKELLAY_NATIVE_1 }}
+          PART2: ${{ secrets.SKELLAY_NATIVE_2 }}
+          PART3: ${{ secrets.SKELLAY_NATIVE_3 }}
+          ARCHIVE_PASSWORD: ${{ secrets.SKELLAY_BUILD_PASSWORD }}
         run: |
           $ErrorActionPreference = 'Stop'
-          $name = 'SKELLAY_PRIVATE_NATIVE_FOUNDATION_0.3.zip'
-          gh release download skellay-native-0.3 --repo "$env:GH_REPO" --pattern "$name" --dir "$env:RUNNER_TEMP"
-          if ($LASTEXITCODE -ne 0) { throw 'Missing private native source release asset.' }
-          $zip = Join-Path $env:RUNNER_TEMP $name
-          if ((Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'a371652f647a57eac6387e96fa263eb92d46dbc4f8792b3524dbe47169cea873') { throw 'Private package checksum mismatch.' }
-          Expand-Archive -LiteralPath $zip -DestinationPath native-source
+          if (!$env:PART1 -or !$env:PART2 -or !$env:PART3 -or !$env:ARCHIVE_PASSWORD) {
+            throw 'Native package secrets missing. Run tools/setup-public-build.ps1 on the owner PC. Public repositories are supported.'
+          }
+          $zip = Join-Path $env:RUNNER_TEMP 'native.zip'
+          try {
+            [IO.File]::WriteAllBytes($zip, [Convert]::FromBase64String($env:PART1 + $env:PART2 + $env:PART3))
+            if ((Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'a371652f647a57eac6387e96fa263eb92d46dbc4f8792b3524dbe47169cea873') { throw 'hash mismatch' }
+            Expand-Archive -LiteralPath $zip -DestinationPath native-source
+          } catch { throw 'Private source restoration failed. Check the v0.3 source package and secrets.' }
+          finally { Remove-Item -LiteralPath $zip -Force -ErrorAction SilentlyContinue }
       - name: Configure pinned JUCE and Windows x64
-        run: cmake -S native-source -B build -A x64 -DSKELLAY_BUILD_VST3=ON
+        run: |
+          New-Item -ItemType Directory -Force logs | Out-Null
+          & cmake -S native-source -B build -A x64 -DSKELLAY_BUILD_VST3=ON *> logs/configure.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Configure failed; encrypted diagnostics will be attached.' }
       - name: Build native tests and VST3
-        run: cmake --build build --config Release --parallel 2
+        run: |
+          & cmake --build build --config Release --parallel 2 *> logs/build.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Build failed; encrypted diagnostics will be attached.' }
       - name: Run native regression tests
-        run: ctest --test-dir build -C Release --output-on-failure
-      - name: Verify bundle layout and package
+        run: |
+          & ctest --test-dir build -C Release --output-on-failure *> logs/tests.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Regression tests failed; encrypted diagnostics will be attached.' }
+      - name: Verify bundle and encrypt artifact
+        env:
+          ARCHIVE_PASSWORD: ${{ secrets.SKELLAY_BUILD_PASSWORD }}
         run: |
           $ErrorActionPreference = 'Stop'
           $bundle = Get-Item 'build/Skellay_artefacts/Release/VST3/Skellay.vst3'
           $binary = Join-Path $bundle.FullName 'Contents/x86_64-win/Skellay.vst3'
           if (!(Test-Path -LiteralPath $binary -PathType Leaf)) { throw 'Windows x64 module missing.' }
-          New-Item -ItemType Directory -Path dist | Out-Null
-          Compress-Archive -LiteralPath $bundle.FullName -DestinationPath dist/Skellay-experimental-0.3-Windows-x64.zip
-          Get-FileHash dist/Skellay-experimental-0.3-Windows-x64.zip -Algorithm SHA256 | Out-File dist/SHA256.txt
-      - name: Upload private experimental artifact
+          New-Item -ItemType Directory -Force dist | Out-Null
+          $seven = Join-Path $env:ProgramFiles '7-Zip/7z.exe'
+          if (!(Test-Path $seven)) { $seven = (Get-Command 7z.exe -ErrorAction Stop).Source }
+          $archive = 'dist/Skellay-experimental-0.3-Windows-x64.7z'
+          & $seven a -t7z -mhe=on "-p$($env:ARCHIVE_PASSWORD.Trim())" $archive $bundle.FullName *> logs/package.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Artifact encryption failed.' }
+          & $seven t "-p$($env:ARCHIVE_PASSWORD.Trim())" $archive *> logs/archive-test.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Encrypted artifact integrity test failed.' }
+          Get-FileHash $archive -Algorithm SHA256 | Out-File dist/SHA256.txt
+      - name: Upload encrypted experimental artifact
         uses: actions/upload-artifact@v4
         with:
           name: Skellay-experimental-0.3-Windows-x64
           path: dist/
           if-no-files-found: error
+          retention-days: 7
+      - name: Encrypt build diagnostics on failure
+        if: ${{ failure() && steps.source.outcome == 'success' }}
+        env:
+          ARCHIVE_PASSWORD: ${{ secrets.SKELLAY_BUILD_PASSWORD }}
+        run: |
+          if (!(Test-Path logs)) { exit 0 }
+          $seven = Join-Path $env:ProgramFiles '7-Zip/7z.exe'
+          if (!(Test-Path $seven)) { $seven = (Get-Command 7z.exe -ErrorAction Stop).Source }
+          & $seven a -t7z -mhe=on "-p$($env:ARCHIVE_PASSWORD.Trim())" diagnostics.7z logs *> $null
+          if ($LASTEXITCODE -ne 0) { throw 'Diagnostic encryption failed.' }
+      - name: Upload encrypted diagnostics
+        if: ${{ failure() && steps.source.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: Skellay-build-diagnostics
+          path: diagnostics.7z
+          if-no-files-found: ignore
           retention-days: 7
