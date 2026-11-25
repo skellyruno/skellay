@@ -15,10 +15,10 @@ int main(int argc,char** argv){
   else sections={group("GLOBAL / MIX & ENGINE",{"Dry","Output","Input","Feedback","Solo","Oversampling"}),group("BANK / TIMING & ROUTE",{"Time","Stereo offset","Sync","Enabled","Routing mode","Tap pre-feedback"}),group("INPUT & FEEDBACK",{"Input pan","Input volume","Feedback pan","Feedback level","Feedback cross"}),group("FILTER 1",{"Cutoff","Resonance","Gain","Type","Order","Filter after"}),group("FILTER 2",{"Cutoff","Resonance","Gain","Type","Order"}),group("PATTERN & OUTPUT",{"Output pan","Output volume","Send to next","Pattern steps","Pattern amount"})};
   // Synthetic visual fixture only: no DSP, actual presets or fake audio metrics.
   for(auto& s:sections)for(auto& c:s.controls)if(c.label=="Mode"||c.label=="Sync"||c.label=="Enabled"||c.label=="Tempo sync"||c.label=="Keep pitch"||c.label=="Type"||c.label=="Order"||c.label=="Oversampling"||c.label=="Delay type"||c.label=="Filter mode"||c.label=="Saturation type"||c.label=="Routing mode"||c.label=="Tap pre-feedback"||c.label=="Filter after"){c.hi=3;c.value=1;c.discrete=true;}
-  rack.setSize(980,690);rack.setMode(mode,2);rack.setSections(std::move(sections));rack.setPreset("UI fixture / no audio engine");rack.setStatus("Original integer controls  |  UI component test");
+  rack.setSize(588,414);rack.setMode(mode,2);rack.setSections(std::move(sections));rack.setPreset("UI fixture / no audio engine");rack.setStatus("Original integer controls  |  UI component test");
   if(rack.controlCount()!=key||!rack.geometryValid()||!rack.testChange(0,27)||got!=0||value!=27)return 4;
-  for(auto dims:{std::pair<int,int>{760,460},{980,690},{1440,1000}}){rack.setSize(dims.first,dims.second);if(!rack.geometryValid())return 5;}
-  rack.setSize(980,690);
+  for(auto dims:{std::pair<int,int>{560,370},{588,414},{1100,800}}){rack.setSize(dims.first,dims.second);if(!rack.geometryValid())return 5;}
+  rack.setSize(588,414);
   auto image=rack.createComponentSnapshot(rack.getLocalBounds(),true,1.f);
   auto file=output.getChildFile(juce::String(mode==0?"classic":mode==1?"modern":"bank")+".png");auto stream=file.createOutputStream();juce::PNGImageFormat png;
   if(!stream||!png.writeImageToStream(image,*stream))return 6;

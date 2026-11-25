@@ -47,7 +47,7 @@ class Editor final:public juce::AudioProcessorEditor,private juce::Timer {
   }
   rack.setSections(std::move(sections),reset);
  }
- void apply(Configuration c,juce::String name){if(p.setConfig(std::move(c))){rack.setPreset(name);rack.setStatus("Preset loaded");rebuild();}else rack.setStatus("Invalid delay configuration");}
+ void apply(Configuration c,juce::String name){if(p.setConfig(std::move(c))){rack.setPreset(name);rack.setStatus(modelName(p.snapshot().model)+" preset loaded");rebuild();}else rack.setStatus("Invalid delay configuration");}
  void openFile(){
   chooser=std::make_unique<juce::FileChooser>("Import FL delay settings",juce::File{},"*.fst;*.flp;*.bin");
   juce::Component::SafePointer<Editor> self(this);
@@ -78,7 +78,7 @@ public:
   rack.onValue=[this](int key,int value){setRaw(key,value);};
   rack.onBegin=[this](int key){if(key>=0&&size_t(key)<bindings.size()&&bindings[size_t(key)].raw>=0)p.beginRaw(displayedModel,bindings[size_t(key)].raw);};
   rack.onEnd=[this](int key){if(key>=0&&size_t(key)<bindings.size()&&bindings[size_t(key)].raw>=0)p.endRaw(displayedModel,bindings[size_t(key)].raw);};
-  setResizable(true,true);setResizeLimits(760,460,1440,1000);setSize(980,690);rebuild();startTimerHz(20);
+  setResizable(true,true);setResizeLimits(560,370,1100,800);setSize(588,414);rebuild();startTimerHz(20);
  }
  ~Editor()override{stopTimer();chooser.reset();}
  void resized()override{rack.setBounds(getLocalBounds());}

@@ -51,12 +51,22 @@ jobs:
             if ($reader.ReadUInt32() -ne 0x4550 -or $reader.ReadUInt16() -ne 0x8664) { throw 'Not a Windows x64 PE module' }
           } finally { $file.Dispose() }
           New-Item -ItemType Directory -Force dist | Out-Null
-          Compress-Archive -LiteralPath $bundle.FullName -DestinationPath dist/Skellay-experimental-0.8-Windows-x64.zip
-          Get-FileHash dist/Skellay-experimental-0.8-Windows-x64.zip -Algorithm SHA256 | Out-File dist/SHA256.txt
+          Compress-Archive -LiteralPath $bundle.FullName -DestinationPath dist/Skellay-experimental-0.9-Windows-x64.zip
+          Get-FileHash dist/Skellay-experimental-0.9-Windows-x64.zip -Algorithm SHA256 | Out-File dist/SHA256.txt
           git rev-parse HEAD | Out-File dist/COMMIT.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: Skellay-experimental-0.8-Windows-x64
+          name: Skellay-experimental-0.9-Windows-x64
           path: dist/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Exercise compact editor component and capture
+        run: |
+          & ./build/SkellayEditorCheck_artefacts/Release/SkellayEditorCheck.exe "${{ github.workspace }}/editor-captures"
+          if ($LASTEXITCODE -ne 0) { throw "Editor component check failed: $LASTEXITCODE" }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Skellay-0.9-editor-component-check
+          path: editor-captures/
           if-no-files-found: error
           retention-days: 14

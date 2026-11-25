@@ -17,24 +17,33 @@ std::optional<Configuration> importRaw(const Bytes& data){switch(data.size()){ca
 ImportResult scanFlPreset(const Bytes& d){
  ImportResult r;
  if(d.size()<22||d.size()>limit||!at(d,0,{'F','L','h','d'})||u32(d,4)!=6||!at(d,14,{'F','L','d','t'})||u32(d,18)!=d.size()-22){r.error="Unsupported or malformed FL container";return r;}
+ const bool standalone=d[8]==0x30 && d[9]==0;
  const Bytes marker={0x9b,0,0,0,0,0x80};
  struct Spec {const char* label; Model model; unsigned size;};
  const std::array<Spec,3> specs={{{"Fruity Delay 2",Model::classic,32},{"Fruity Delay 3",Model::modern,108},{"Fruity Delay Bank",Model::bank,792}}};
  for(const auto& old:{utf16("Fruity Delay"),utf16("Fruity Delay 1")})for(std::size_t p=22;p<d.size();++p)if(at(d,p,old)&&at(d,p+old.size(),{0xd4,0x34}))r.legacyDelaySeen=true;
  for(const auto& spec:specs){const auto name=utf16(spec.label);for(std::size_t p=22;p<d.size();++p){if(!at(d,p,name))continue;auto h=p+name.size();if(!at(d,h,{0xd4,0x34})||d.size()-h<10)continue;
- // Strict initial support for the fixed wrapper offset observed in research.
- // Do not scan forward into another plugin if this wrapper differs.
- const auto k=h+58;
- if(!at(d,k,marker)||d.size()-k<14||d[k+10]!=0x29||d[k+11]!=0||d[k+12]!=0xd5){++r.rejected;continue;}
- auto offset=k+13;std::uint32_t n=0;
- if(!readLength(d,offset,n)||n!=spec.size||n>d.size()-offset){++r.rejected;continue;}
- Bytes raw(d.begin()+offset,d.begin()+offset+spec.size);auto c=importRaw(spec.model,raw);if(!c){++r.rejected;continue;}
+ // Standalone FL 25.1.4 presets use a 54-byte wrapper; earlier mixer records use 58.
+ // Check only known positions and reject ambiguous or malformed records.
+ std::optional<Configuration> c; std::size_t offset=0; unsigned matches=0;
+ for(const auto distance:{54u,58u}){
+  if(distance==54u&&!standalone)continue;
+  const auto k=h+distance;
+  if(!at(d,k,marker)||d.size()-k<14||d[k+10]!=0x29||d[k+11]!=0||d[k+12]!=0xd5)continue;
+  auto candidate=k+13;std::uint32_t n=0;
+  if(!readLength(d,candidate,n)||n!=spec.size||n>d.size()-candidate)continue;
+  Bytes raw(d.begin()+candidate,d.begin()+candidate+spec.size);auto state=importRaw(spec.model,raw);
+  if(!state)continue;
+  ++matches;offset=candidate;c=std::move(state);
+ }
+ if(matches!=1){++r.rejected;continue;}
  if(r.entries.size()>=1024){r.entries.clear();r.error="Too many delay instances";return r;}
- r.entries.push_back({std::move(*c),location(d,h+2),location(d,h+6),offset});p=offset+spec.size-1;
+ r.entries.push_back({std::move(*c),standalone?-1:location(d,h+2),standalone?-1:location(d,h+6),offset});p=offset+spec.size-1;
  }}
  std::sort(r.entries.begin(),r.entries.end(),[](const auto& a,const auto& b){return a.offset<b.offset;});
  for(std::size_t i=1;i<r.entries.size();++i)if(r.entries[i].offset<r.entries[i-1].offset+r.entries[i-1].state.bytes.size()){r.entries.clear();r.error="Overlapping delay records";return r;}
- if(r.entries.empty())r.error=r.legacyDelaySeen?"Original Fruity Delay is not supported":"No supported delay record found";
+ if(standalone&&r.entries.size()>1){r.entries.clear();r.error="Ambiguous standalone delay preset";return r;}
+ if(r.entries.empty())r.error=r.legacyDelaySeen?"Original Fruity Delay is not supported":r.rejected?"Recognized delay but unsupported or invalid parameter record":"No supported delay record found";
  return r;
 }
 }
