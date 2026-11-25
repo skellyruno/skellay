@@ -1,0 +1,68 @@
+name: Skellay Windows experimental VST3
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/skellay-windows.yml'
+      - 'docs/WINDOWS_BUILD.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('skellay-pr-{0}', github.event.pull_request.number) || format('skellay-protected-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  privacy-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm private repository
+        env:
+          IS_PRIVATE: ${{ github.event.repository.private }}
+        run: |
+          if [ "$IS_PRIVATE" != "true" ]; then
+            echo "::error::Private native DSP and experimental binaries must not be exposed. Change repository visibility to private before attaching the owner-controlled source ZIP."
+            exit 1
+          fi
+  windows-vst3:
+    needs: privacy-gate
+    if: ${{ github.event.repository.private && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: windows-2022
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Retrieve exact private native source package
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $name = 'SKELLAY_PRIVATE_NATIVE_FOUNDATION_0.3.zip'
+          gh release download skellay-native-0.3 --repo "$env:GH_REPO" --pattern "$name" --dir "$env:RUNNER_TEMP"
+          if ($LASTEXITCODE -ne 0) { throw 'Missing private native source release asset.' }
+          $zip = Join-Path $env:RUNNER_TEMP $name
+          if ((Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'a371652f647a57eac6387e96fa263eb92d46dbc4f8792b3524dbe47169cea873') { throw 'Private package checksum mismatch.' }
+          Expand-Archive -LiteralPath $zip -DestinationPath native-source
+      - name: Configure pinned JUCE and Windows x64
+        run: cmake -S native-source -B build -A x64 -DSKELLAY_BUILD_VST3=ON
+      - name: Build native tests and VST3
+        run: cmake --build build --config Release --parallel 2
+      - name: Run native regression tests
+        run: ctest --test-dir build -C Release --output-on-failure
+      - name: Verify bundle layout and package
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $bundle = Get-Item 'build/Skellay_artefacts/Release/VST3/Skellay.vst3'
+          $binary = Join-Path $bundle.FullName 'Contents/x86_64-win/Skellay.vst3'
+          if (!(Test-Path -LiteralPath $binary -PathType Leaf)) { throw 'Windows x64 module missing.' }
+          New-Item -ItemType Directory -Path dist | Out-Null
+          Compress-Archive -LiteralPath $bundle.FullName -DestinationPath dist/Skellay-experimental-0.3-Windows-x64.zip
+          Get-FileHash dist/Skellay-experimental-0.3-Windows-x64.zip -Algorithm SHA256 | Out-File dist/SHA256.txt
+      - name: Upload private experimental artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Skellay-experimental-0.3-Windows-x64
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
