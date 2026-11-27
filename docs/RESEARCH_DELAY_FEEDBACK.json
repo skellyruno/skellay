@@ -1,0 +1,122 @@
+{
+  "schema": 1,
+  "parent": "0c603680874ee1d94387fb5731493e086f0ff654",
+  "source_blobs": {
+    "include/ResearchDelay.h": "6dad6c09adca53c92627251956477cfc4579d770",
+    "tests/research_delay_wet_trim.cpp": "5abc74fcd32e1fd4f5f5267b3855cc83c60baf86",
+    "tests/research_delay_echo_adapter.cpp": "b81997b229c7d5421a9092bc798038e088d1cc79",
+    "tests/bench_delay_echoes.py": "3214589644e16ebf50521bc12550e66874cc0ac8"
+  },
+  "private_report_sha256": "703f25dc49a65b81e3e2971998b17a8af2e017a3428551f6acd814458e9e8292",
+  "validation": {
+    "cached_kit": "13/13 passed",
+    "parent_windows_ci": "passed",
+    "optimized_test": "passed",
+    "asan_ubsan": "passed",
+    "sample_rates": [
+      8000,
+      44100,
+      48000,
+      96000,
+      192000,
+      384000
+    ],
+    "configurations": 12,
+    "frames_per_configuration": 100000,
+    "full_wet_scale_exact": true,
+    "dry_exact": true,
+    "tone_decay_oracles": 45,
+    "max_error_db": 1.7763568394002505e-14,
+    "stereo_impulse_oracles": 72,
+    "stereo_abs_tolerance": 1e-7,
+    "new_ci": "unverified"
+  },
+  "echo_decay": {
+    "feedback": 0.75,
+    "delay_seconds": 0.25,
+    "fractional_offset_samples": 0.5,
+    "impulse_echoes": 6,
+    "fs_44100": {
+      "hz": [
+        8000,
+        12000,
+        16000
+      ],
+      "integer_db_per_repeat": -2.498774732165999,
+      "fractional_linear_and_cubic_db_per_repeat": [
+        -3.993016891747485,
+        -6.156358638013806,
+        -10.080029915283758
+      ]
+    },
+    "side_crossfeed": [
+      0,
+      0.25,
+      0.5,
+      1
+    ],
+    "side_loop_gain": [
+      0.75,
+      0.375,
+      0,
+      -0.75
+    ],
+    "mid_loop_gain": 0.75
+  },
+  "vocal": {
+    "inputs": 36,
+    "fs": 44100,
+    "echo_renders": 108,
+    "echo_clip_seconds": 0.125,
+    "bands_hz": [
+      [
+        250,
+        1000
+      ],
+      [
+        4000,
+        8000
+      ],
+      [
+        8000,
+        12000
+      ]
+    ],
+    "median_db_per_repeat": {
+      "integer": [
+        -2.49877475,
+        -2.49877473,
+        -2.49877476
+      ],
+      "linear_half": [
+        -2.50737248,
+        -3.24795425,
+        -4.45165601
+      ],
+      "cubic_half": [
+        -2.50737492,
+        -3.26185834,
+        -4.47606432
+      ]
+    },
+    "trim_pairs": 288,
+    "trim_renders": 576,
+    "trim_db": -3,
+    "feedback": 0.45,
+    "crossfeed": 0.35,
+    "wet": [
+      0.5,
+      1
+    ],
+    "jump_cases": [
+      false,
+      true
+    ],
+    "maximum_before_sample_peak_dbfs": 0.6530961290837649,
+    "maximum_after_sample_peak_dbfs": -2.3469039412741517,
+    "over_scale_pairs_before": 4,
+    "over_scale_pairs_after": 0,
+    "max_waveform_oracle_error": 5.960464477539063e-8
+  },
+  "limits": "Fixed delay oracle, isolated strongest short vocal excerpts and full-input trim tests; sample peak only; not true peak or listening evaluation. No CPU benchmark. Feedback stays linear and stereo convex. No model selector/serialization integration. No change to Classic/Modern/Bank."
+}

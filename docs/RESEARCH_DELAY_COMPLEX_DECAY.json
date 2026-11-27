@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "parent": "6271e2fc7136c4144d2254e83af4d51e270f51b1",
+  "header_blob": "6dad6c09adca53c92627251956477cfc4579d770",
+  "test_blob": "324d4cfae229e74baa28090a6f2353a00192c571",
+  "design": "actual owned ResearchDelay, default zero wet trim, fixed-control impulse oracle",
+  "sample_rates": [
+    44100,
+    48000,
+    96000
+  ],
+  "read_modes": [
+    "linear",
+    "cubic_output_only"
+  ],
+  "delay_samples": [
+    512,
+    512.5
+  ],
+  "feedback": [
+    0.45,
+    0.9
+  ],
+  "crossfeed": [
+    0,
+    0.35,
+    0.5,
+    1
+  ],
+  "echoes": 8,
+  "frequencies_hz": [
+    0,
+    1000,
+    8000,
+    12000,
+    16000,
+    20000
+  ],
+  "complex_spectrum_checks": 9216,
+  "max_absolute_complex_error": 1.21061807468e-7,
+  "tolerance": 0.000005,
+  "case_44100_12000hz_half_sample_feedback_0_9_cross_0_35": {
+    "echoes": [
+      1,
+      4,
+      8
+    ],
+    "linear_mid_db": [
+      -3.657583906,
+      -17.375785751,
+      -35.666730718
+    ],
+    "cubic_mid_db": [
+      -1.48211125,
+      -15.200312898,
+      -33.491250643
+    ],
+    "linear_side_db": [
+      -3.657583906,
+      -48.748536339,
+      -108.876703204
+    ],
+    "cubic_side_db": [
+      -1.48211125,
+      -46.573096694,
+      -106.704082536
+    ]
+  },
+  "validation": {
+    "optimized_gcc": "passed",
+    "address_undefined_sanitizers": "passed",
+    "prior_header_replay": "same result",
+    "new_ci": "pending"
+  },
+  "limits": "Fixed controls, isolated impulse echoes, bounded linear-range signal. Not a time-varying or host/listening test. Absolute complex error, not relative dB error near nulls. No DSP or approved model changes."
+}

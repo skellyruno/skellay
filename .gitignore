@@ -1,0 +1,8 @@
+build*/
+private/
+*.vst3
+*.flac
+*.wav
+*.fst
+*.flp
+*.bin

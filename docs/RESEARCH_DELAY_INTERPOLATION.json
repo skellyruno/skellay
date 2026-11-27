@@ -1,0 +1,104 @@
+{
+  "schema": 1,
+  "parent": "4175b662b6545ce66295dd96a32eb909da692abf",
+  "component": "ResearchDelay optional cubic wet read",
+  "blobs": {
+    "include/ResearchDelay.h": "e2ae119c808f7636a65df5808c29941b95811584",
+    "tests/research_delay_cubic.cpp": "9f16807b4987536f7c96ca228112f01e1b29e961",
+    "tests/research_delay_cubic_adapter.cpp": "5c5d0b160f49632b5f6830aeffc9f3783ad5dd45",
+    "tests/bench_delay_interpolation.py": "fd6c5cbaedf71580dc364c66ce570d5eff65eeeb"
+  },
+  "local_report_sha256": "0a7322bcb446657a6998214a572e2e23bdf76ac7c4fc711b9845d4c4c352241f",
+  "rates": [
+    8000,
+    44100,
+    48000,
+    96000,
+    192000,
+    384000
+  ],
+  "validation": {
+    "original_test_optimized": "passed",
+    "new_test_optimized": "passed",
+    "new_test_asan_ubsan": "passed",
+    "parent_windows_ci": "passed",
+    "new_ci": "pending",
+    "new_plugin_model": "not connected"
+  },
+  "tone": {
+    "pairs": 18,
+    "fs_44100_hz": [
+      1000,
+      4000,
+      8000,
+      12000,
+      16000,
+      20000
+    ],
+    "linear_gain_db": [
+      -0.022057938028,
+      -0.357513041047,
+      -1.494241973767,
+      -3.657583558103,
+      -7.581254611612,
+      -16.741592791066
+    ],
+    "cubic_gain_db": [
+      -0.000083284258,
+      -0.020925774397,
+      -0.313903908732,
+      -1.482110234554,
+      -4.580046080935,
+      -13.281295277874
+    ]
+  },
+  "vocal": {
+    "inputs": 36,
+    "seconds": 159.25009070294786,
+    "fs": 44100,
+    "pairs": 108,
+    "all_finite": true,
+    "rows": [
+      {
+        "feedback": 0,
+        "jump": false,
+        "median_difference_db": -30.230087884956543,
+        "peak_dbfs": [
+          -1.43516061,
+          -1.37640437
+        ],
+        "over_scale_excerpts": [
+          0,
+          0
+        ]
+      },
+      {
+        "feedback": 0.45,
+        "jump": false,
+        "median_difference_db": -30.675614765436293,
+        "peak_dbfs": [
+          0.60507037,
+          0.65309613
+        ],
+        "over_scale_excerpts": [
+          1,
+          1
+        ]
+      },
+      {
+        "feedback": 0.45,
+        "jump": true,
+        "median_difference_db": -30.812733002686926,
+        "peak_dbfs": [
+          0.26100158,
+          0.34813932
+        ],
+        "over_scale_excerpts": [
+          1,
+          1
+        ]
+      }
+    ]
+  },
+  "limits": "Cubic only on output, original linear feedback state retained. Lower loss does not establish complete high-frequency reconstruction; both modes still lose near Nyquist. Sample peak, not true peak or safety guarantee. Local kernel only, no CPU measurement or listening approval, no vendor comparison. No changes to Classic/Modern/Bank."
+}

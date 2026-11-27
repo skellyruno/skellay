@@ -1,0 +1,11 @@
+# Independent research delay — first native gate
+
+Add a separate original two-read-head delay kernel to Skellay. Existing Classic, Modern and Bank and their serialized IDs remain unchanged. A new model selector, state schema and UI must be separately implemented and tested; this is not an installable fourth plugin model yet.
+
+Single stereo history with linear fractional interpolation, 25 ms smoothstep crossfade for time jumps, coalesced requests during transitions, 10 ms smoothing of feedback/wet/crossfeed, feedback capped at 0.95. Preallocated 2-second default ring (768016 bytes at 48 kHz, 3072016 at 192 kHz). No processing-time allocations by inspection. Hostile history is bounded to +/-32; this is not a limiter or guaranteed true-peak protection. Intentional delay is not a reported host-latency claim. Linear interpolation has high-frequency loss; listening/anti-aliasing comparisons remain necessary.
+
+GCC optimized and ASan/UBSan local tests at 8/44.1/48/96/192/384 kHz passed integer ping-pong impulse, fractional impulse, dry identity, independent linear-ramp crossfade oracle, nonzero tail after time change, reset and randomized controls. New CTest entry registered with asserts enabled. Full project build and UI unverified.
+
+36 private real vocal excerpts (159.25 s at 44.1k), 108 renders: dry, fixed 120 ms delay, 120->220 ms time jump halfway through input. 40% wet, .45 feedback, .6 crossfeed in delayed conditions. One second tail appended. All finite, all 36 dry exact, all 72 delayed renders have nonzero tail energy, zero over-scale samples. Peak sample magnitude .85338 dry, .72325 fixed, .73314 transition. Median single-render native wall time per audio second .413/.406/.437 ms; not DAW CPU or a comparison to existing models. Reproduce with python tests/bench_research_delay.py --manifest /private/manifest.json --output /private/results.json. Private audio/identities remain local.
+
+Next: compare with existing delay engines on identical input and matched wet level; test tempo mapping, nonlinear feedback, transition artifacts, state migration, memory/allocations, actual VST3/Quick4 and listening before enabling a new serialized model. No external vendor source used.

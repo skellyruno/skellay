@@ -1,0 +1,72 @@
+name: Skellay Windows experimental VST3
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/skellay-windows.yml'
+      - 'CMakeLists.txt'
+      - 'native/**'
+      - 'plugin/**'
+      - 'tests/**'
+      - 'tools/**'
+      - 'ui/**'
+      - 'overlay/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('skellay-pr-{0}', github.event.pull_request.number) || format('skellay-protected-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  windows-vst3:
+    runs-on: windows-2022
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Configure pinned JUCE and Windows x64
+        run: cmake -S . -B build -A x64 -DSKELLAY_BUILD_VST3=ON
+      - name: Compile VST3 and native regression tests
+        run: cmake --build build --config Release --parallel 2
+      - name: Run native regression tests
+        run: ctest --test-dir build -C Release --output-on-failure
+      - name: Verify Windows x64 module and package
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $bundle = Get-Item 'build/Skellay_artefacts/Release/VST3/Skellay.vst3'
+          $binary = Join-Path $bundle.FullName 'Contents/x86_64-win/Skellay.vst3'
+          if (!(Test-Path -LiteralPath $binary -PathType Leaf)) { throw 'Missing VST3 module' }
+          $file = [IO.File]::OpenRead($binary)
+          try {
+            $reader = [IO.BinaryReader]::new($file)
+            if ($reader.ReadUInt16() -ne 0x5a4d) { throw 'Missing MZ header' }
+            $file.Position = 0x3c
+            $pe = $reader.ReadUInt32()
+            $file.Position = $pe
+            if ($reader.ReadUInt32() -ne 0x4550 -or $reader.ReadUInt16() -ne 0x8664) { throw 'Not a Windows x64 PE module' }
+          } finally { $file.Dispose() }
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Compress-Archive -LiteralPath $bundle.FullName -DestinationPath dist/Skellay-experimental-0.9-Windows-x64.zip
+          Get-FileHash dist/Skellay-experimental-0.9-Windows-x64.zip -Algorithm SHA256 | Out-File dist/SHA256.txt
+          git rev-parse HEAD | Out-File dist/COMMIT.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Skellay-experimental-0.9-Windows-x64
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Exercise compact editor component and capture
+        run: |
+          & ./build/SkellayEditorCheck_artefacts/Release/SkellayEditorCheck.exe "${{ github.workspace }}/editor-captures"
+          if ($LASTEXITCODE -ne 0) { throw "Editor component check failed: $LASTEXITCODE" }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Skellay-0.9-editor-component-check
+          path: editor-captures/
+          if-no-files-found: error
+          retention-days: 14
