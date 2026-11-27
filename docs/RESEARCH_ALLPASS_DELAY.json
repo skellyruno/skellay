@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "parent": "5ee9a58fffb3a790ee62f2d85a1cfb62424ddcf4",
+  "source_blobs": {
+    "include/ResearchAllpassDelay.h": "7bfe2aa507536dad6689c0918d7953c8aa628be3",
+    "tests/research_allpass_delay.cpp": "16f349e975a818f99d146220fc574cc7aa670915"
+  },
+  "validation": {
+    "optimized": "passed",
+    "asan_ubsan": "passed",
+    "complex_cases": 432,
+    "complex_checks": 17280,
+    "max_complex_error": 3.21824074021e-15,
+    "tolerance": 1e-8,
+    "stress_rates": [
+      8000,
+      44100,
+      48000,
+      96000,
+      192000,
+      384000
+    ]
+  },
+  "vocal": {
+    "inputs": 36,
+    "comparison_pairs": 36,
+    "median_echo_6_vs_1_db": [
+      -12.66484043,
+      -12.49387366
+    ],
+    "max_sample_peak_dbfs": [
+      -2.94465897,
+      -2.81032399
+    ],
+    "order": [
+      "linear",
+      "allpass"
+    ]
+  },
+  "limits": "Fixed-time lab only, allpass magnitude flat but frequency-dependent group delay. Near-integer fractional values below .05 rejected; exact integer bypass. No time changes, host latency, CPU or listening claim. Original models, selector and defaults unchanged."
+}
