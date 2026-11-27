@@ -11,8 +11,9 @@ class ResearchDelay {
 public:
     struct Frame { float l=0, r=0; };
     struct Controls { double milliseconds=250; float feedback=.35f, wet=.5f, cross=0.f; };
-    bool prepare(double fs, double maximumSeconds=2, bool cubicOutput=false) {
+    bool prepare(double fs, double maximumSeconds=2, bool cubicOutput=false, float wetTrimDb=0) {
         if(!std::isfinite(fs)||fs<8000||fs>384000||!std::isfinite(maximumSeconds)||maximumSeconds<.01||maximumSeconds>4) return false;
+        wetGain=std::pow(10.f,bounded(wetTrimDb,-18.f,0.f)/20.f);
         cubic=cubicOutput; rate=fs; maxDelay=std::floor(fs*maximumSeconds); ring.assign(std::size_t(maxDelay)+2,{});
         fadeSamples=std::max(2,int(std::round(rate*.025))); smoothing=float(1-std::exp(-1/(rate*.01)));
         reset(); return true;
@@ -44,7 +45,8 @@ public:
         // Convex crossfeed with feedback <1. Bound hostile input history; dry stays unmodified.
         ring[write]={bounded(x.l+feedback*fl,-32,32),bounded(x.r+feedback*fr,-32,32)};
         if(++write==ring.size())write=0;
-        return {x.l*(1-wet)+wet*output.l,x.r*(1-wet)+wet*output.r};
+        if(wetGain==1.f)return {x.l*(1-wet)+wet*output.l,x.r*(1-wet)+wet*output.r};
+        return {x.l*(1-wet)+wet*(wetGain*output.l),x.r*(1-wet)+wet*(wetGain*output.r)};
     }
 private:
     static float finite(float x) noexcept {return std::isfinite(x)?x:0.f;}
@@ -68,6 +70,7 @@ private:
         };
         return {interp(a.l,b.l,c.l,d.l),interp(a.r,b.r,c.r,d.r)};
     }
+    float wetGain=1.f;
     bool cubic=false;
     std::vector<Frame> ring; std::size_t write=0; double rate=48000,maxDelay=1,from=1,to=1,pending=1;
     int fadeSamples=2,age=2;float smoothing=1,feedback=0,wet=0,cross=0; bool seeded=false;
