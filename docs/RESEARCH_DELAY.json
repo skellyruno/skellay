@@ -1,0 +1,69 @@
+{
+  "schema": 1,
+  "parent": "8a0904b99dba671195f139907e09ac86a09ad5f4",
+  "component": "Independent ResearchDelay",
+  "integration": "Native experimental header/test; not yet selectable in plugin",
+  "rates": [
+    8000,
+    44100,
+    48000,
+    96000,
+    192000,
+    384000
+  ],
+  "checks": {
+    "optimized": "passed",
+    "asan_ubsan": "passed",
+    "fractional_impulse": "passed",
+    "integer_pingpong_impulse": "passed",
+    "ramp_crossfade_oracle": "passed",
+    "tail": "passed",
+    "dry_identity": "passed",
+    "hostile_controls": "passed",
+    "kit": "13/13 passed"
+  },
+  "design": {
+    "time_crossfade_ms": 25,
+    "smoothing_time_constant_ms": 10,
+    "default_capacity_seconds": 2,
+    "storage_bytes_at_48000": 768016,
+    "storage_bytes_at_192000": 3072016,
+    "feedback_max": 0.95,
+    "one_stereo_history": true
+  },
+  "vocal": {
+    "inputs": 36,
+    "seconds": 159.25009070294786,
+    "fs": 44100,
+    "renders": 108,
+    "exact_dry": 36,
+    "nonzero_tails": 72,
+    "over_scale_samples": 0,
+    "rows": [
+      {
+        "mode": "dry",
+        "peak": 0.8533803224563599,
+        "median_ms_per_audio_second": 0.413420511538739
+      },
+      {
+        "mode": "fixed",
+        "peak": 0.7232532501220703,
+        "min_tail_rms": 0.0000021938600554276673,
+        "median_ms_per_audio_second": 0.4055930191513358
+      },
+      {
+        "mode": "time jump",
+        "peak": 0.7331429719924927,
+        "min_tail_rms": 0.0001338354509869204,
+        "median_ms_per_audio_second": 0.43669738307940564
+      }
+    ]
+  },
+  "blobs": {
+    "include/ResearchDelay.h": "eae30d60e8ceb5c42d1ac887e554cb0207fae34a",
+    "tests/research_delay.cpp": "57ec11f80f11934b142cc4a814e46717beee569f",
+    "tests/research_delay_adapter.cpp": "f77aa70cb8f844da696058725551ffe01663b5c0",
+    "tests/bench_research_delay.py": "c4f9056a4c772a91e90146ecd7fba110c98ca224"
+  },
+  "limits": "Original independent implementation, not a reconstruction. Sample peaks only. No DAW, tempo sync, serialization, GUI or VST3 model integration yet. Native single-pass wall timing includes preparation. Existing Classic, Modern and Bank untouched."
+}

@@ -62,3 +62,13 @@ add_test(NAME frozen_live COMMAND frozen_live)
 add_executable(structural tests/structural.cpp)
 target_link_libraries(structural PRIVATE skellay_native Threads::Threads)
 add_test(NAME structural COMMAND structural)
+
+# Independent delay research; no new serialized model or preset IDs.
+add_executable(research_delay tests/research_delay.cpp)
+target_compile_features(research_delay PRIVATE cxx_std_17)
+if(MSVC)
+  target_compile_options(research_delay PRIVATE /UNDEBUG /W4)
+else()
+  target_compile_options(research_delay PRIVATE -UNDEBUG -Wall -Wextra -Werror)
+endif()
+add_test(NAME research_delay COMMAND research_delay)
